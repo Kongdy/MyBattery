@@ -4,7 +4,9 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.Build;
 import android.text.TextPaint;
 import android.util.AttributeSet;
@@ -19,6 +21,7 @@ import com.project.kongdy.mybattery.R;
  */
 public class MyBattery extends View {
 
+    private Paint noPowerPaint;
     /** 电池色 **/
     private Paint powerPaint;
     /** 基本色/无电色 **/
@@ -30,8 +33,15 @@ public class MyBattery extends View {
     /** 显示电量百分比 **/
     private boolean showPercent;
 
-    private int batteryWidth;
-    private int batteryHeight;
+    private float batteryWidth;
+    private float batteryHeight;
+    private float radius;
+    private float percentOffset;
+    private float batterySpace;
+    private float powerHeight;
+
+    private RectF bgRectF;
+    private RectF headF;
 
     public MyBattery(Context context) {
         super(context);
@@ -65,7 +75,16 @@ public class MyBattery extends View {
         percentPaint = new TextPaint();
         basePaint = new Paint();
         powerPaint = new Paint();
+        noPowerPaint = new Paint();
 
+        bgRectF = new RectF();
+        headF = new RectF();
+
+        basePaint.setColor(Color.GRAY);
+        basePaint.setStyle(Paint.Style.STROKE);
+        basePaint.setStrokeWidth(16);
+
+        paintInit(noPowerPaint);
         paintInit(basePaint);
         paintInit(powerPaint);
         paintInit(percentPaint);
@@ -83,18 +102,69 @@ public class MyBattery extends View {
         super.onDraw(canvas);
 
         canvas.saveLayer(0,0,getMeasuredWidth(),getMeasuredHeight(),basePaint,Canvas.ALL_SAVE_FLAG);
-
-       // canvas.drawRoundRect(0,0,);
-
+        canvas.drawRoundRect(bgRectF,radius,radius,basePaint);
+        basePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        canvas.drawRoundRect(headF,radius/2f,radius/2f,basePaint);
+        drawBattery(canvas);
+        basePaint.setStyle(Paint.Style.STROKE);
+        float gravityOffset = getGravityOffset();
+        canvas.translate(gravityOffset,0);
+        canvas.drawText(String.valueOf(batteryValue)+"%",headF.right,getMeasuredHeight()/2+percentPaint.getFontSpacing()/4f,
+                percentPaint);
+        canvas.translate(-gravityOffset,0);
         canvas.restore();
+    }
+
+    private void drawBattery(Canvas canvas) {
+        float tempWidth = batterySpace+basePaint.getStrokeWidth();
+        float top = bgRectF.top+basePaint.getStrokeWidth()/2f+powerHeight/4;
+        for (int i = 0; i < 5;i++){
+            canvas.drawRect(tempWidth,top,tempWidth+2*batterySpace,top+powerHeight,noPowerPaint);
+            tempWidth = tempWidth+3*batterySpace;
+        }
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        // 默认电池长为宽的2.2倍
+        percentPaint.setTextSize((w>h?h:w)/3f);
 
+        // 默认电池长为宽的2.2倍
+        percentOffset = 0;
+        if(showPercent) {
+            percentOffset = percentPaint.measureText("100%");
+        }
+        basePaint.setStrokeWidth((w-percentOffset)/30f);
+        float batteryHead = basePaint.getStrokeWidth()*2f;
+        if(2.2*h >= w-percentOffset-batteryHead-basePaint.getStrokeWidth()/2f) {
+            batteryHeight = (w-percentOffset-batteryHead)/2.2f;
+            batteryWidth = w-percentOffset-batteryHead-basePaint.getStrokeWidth()/2f;
+        } else {
+            batteryHeight = h;
+            batteryWidth = h*2.2f;
+        }
+
+        batterySpace = (batteryWidth-basePaint.getStrokeWidth())/16f;
+        radius = batteryWidth/14;
+        bgRectF.left = (getMeasuredWidth()-(batteryWidth+percentOffset+batteryHead-basePaint.getStrokeWidth()/2f))/2f;
+        bgRectF.top = (getMeasuredHeight()-batteryHeight)/2f;
+        bgRectF.bottom = bgRectF.top + batteryHeight;
+        bgRectF.right = bgRectF.left + batteryWidth;
+
+        headF.left = bgRectF.right;
+        headF.top = bgRectF.top+batteryHeight/4f;
+        headF.right = bgRectF.right+batteryHead;
+        headF.bottom = bgRectF.top+3f*batteryHeight/4f;
+
+        powerHeight = (batteryHeight-basePaint.getStrokeWidth())*(2f/3f);
+
+        noPowerPaint.setColor(basePaint.getColor());
+
+    }
+
+    private float getGravityOffset() {
+        return percentOffset-percentPaint.measureText(batteryValue+"%");
     }
 
     public int getBatteryValue() {
