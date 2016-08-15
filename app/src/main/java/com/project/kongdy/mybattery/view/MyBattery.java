@@ -1,5 +1,6 @@
 package com.project.kongdy.mybattery.view;
 
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -29,7 +30,7 @@ public class MyBattery extends View {
     /** 电量百分比文字显示 **/
     private TextPaint percentPaint;
     /** 电量 0~100 **/
-    private int batteryValue;
+    private int batteryValue = 50;
     /** 显示电量百分比 **/
     private boolean showPercent;
 
@@ -42,6 +43,8 @@ public class MyBattery extends View {
 
     private RectF bgRectF;
     private RectF headF;
+
+    private ChartAnimator chartAnimator;
 
     public MyBattery(Context context) {
         super(context);
@@ -83,12 +86,21 @@ public class MyBattery extends View {
         basePaint.setColor(Color.GRAY);
         basePaint.setStyle(Paint.Style.STROKE);
         basePaint.setStrokeWidth(16);
+        powerPaint.setColor(Color.GREEN);
 
         paintInit(noPowerPaint);
         paintInit(basePaint);
         paintInit(powerPaint);
         paintInit(percentPaint);
+
+        chartAnimator = new ChartAnimator(new MyAnimalUpdateListener() {
+            @Override
+            public void onUpdate(ValueAnimator animation) {
+                postInvalidate();
+            }
+        });
     }
+
 
     private void paintInit(Paint paint) {
         paint.setAntiAlias(true); // 锯齿
@@ -117,9 +129,16 @@ public class MyBattery extends View {
 
     private void drawBattery(Canvas canvas) {
         float tempWidth = batterySpace+basePaint.getStrokeWidth();
+        float powerWidth = 10*batterySpace;
         float top = bgRectF.top+basePaint.getStrokeWidth()/2f+powerHeight/4;
         for (int i = 0; i < 5;i++){
+            float cursorRight = chartAnimator.getPhaseX()*powerWidth*batteryValue/100f;
             canvas.drawRect(tempWidth,top,tempWidth+2*batterySpace,top+powerHeight,noPowerPaint);
+
+            cursorRight = cursorRight+(i+1)*batterySpace+basePaint.getStrokeWidth();
+            cursorRight = cursorRight>tempWidth+2*batterySpace?tempWidth+2*batterySpace:cursorRight;
+
+            canvas.drawRect(tempWidth,top,cursorRight,top+powerHeight,powerPaint);
             tempWidth = tempWidth+3*batterySpace;
         }
     }
@@ -180,4 +199,9 @@ public class MyBattery extends View {
         }
         this.batteryValue = batteryValue;
     }
+
+    public void animalStart(long duration) {
+        chartAnimator.animalX(duration);
+    }
+
 }
