@@ -44,6 +44,8 @@ public class MyBattery extends View {
     private RectF bgRectF;
     private RectF headF;
 
+    private float percentTextSize;
+
     private ChartAnimator chartAnimator;
 
     public MyBattery(Context context) {
@@ -72,6 +74,9 @@ public class MyBattery extends View {
         TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.MyBattery);
 
         showPercent = a.getBoolean(R.styleable.MyBattery_mb_showPercent,false);
+        int baseColor = a.getColor(R.styleable.MyBattery_mb_baseColor,Color.GRAY);
+        int powerColor = a.getColor(R.styleable.MyBattery_mb_powerColor,Color.GREEN);
+        percentTextSize = a.getDimension(R.styleable.MyBattery_mb_percentTextSize,-1);
 
         a.recycle();
 
@@ -83,10 +88,9 @@ public class MyBattery extends View {
         bgRectF = new RectF();
         headF = new RectF();
 
-        basePaint.setColor(Color.GRAY);
+        basePaint.setColor(baseColor);
         basePaint.setStyle(Paint.Style.STROKE);
-        basePaint.setStrokeWidth(16);
-        powerPaint.setColor(Color.GREEN);
+        powerPaint.setColor(powerColor);
 
         paintInit(noPowerPaint);
         paintInit(basePaint);
@@ -147,7 +151,7 @@ public class MyBattery extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        percentPaint.setTextSize((w>h?h:w)/3f);
+        percentPaint.setTextSize(percentTextSize<0?(w>h?h:w)/3f:percentTextSize);
 
         // 默认电池长为宽的2.2倍
         percentOffset = 0;
